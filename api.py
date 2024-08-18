@@ -1,5 +1,7 @@
+import curses
 from enum import Enum
-
+from PIL import Image
+import numpy as np
 
 stats = [[]] # HP, Lexicon, Hunger
 
@@ -37,20 +39,6 @@ class Armor_Types(Enum):
     LIGHT = 2
     CLOTHING = 3
     MAGICAL = 4
-
-
-class Classes(Enum):
-    RANGER = {'Strengths': {Damage_Modifier.RANGED: 1.2}, 'Weaknesses': {Damage_Types.PIERCING: 1.1}},
-    BARBARIAN = {'Strengths': {Damage_Modifier.MELEE: 1.2}, 'Weaknesses': {Damage_Types.MALAISE: 1.1}},
-    MAGE = {'Strengths': {Damage_Modifier.MAGIC: 1.2}, 'Weaknesses': {Damage_Types.INSANITY: 1.1}},
-
-
-class Races(Enum):
-    HUMAN = {'Resistances': {Damage_Types.COLD: 1.3}, 'Weaknesses': {Damage_Types.INSANITY: 1.1}},
-    ARBOREAL = {'Resistances': {Damage_Types.MALAISE: 1.2}, 'Weaknesses': {Damage_Types.BLUNT: 1.1, Damage_Types.PIERCING: 1.1, Damage_Types.SLICING: 1.1}, 'Mods': {Traits.INGENUITY: 5}},
-    CELESTIAL = {'Resistances': {Damage_Types.COLD: 1.1, Damage_Types.LIGHTNING: 1.1, Damage_Types.FLAME: 1.1}, 'Weaknesses': {Damage_Types.MALAISE: 1.75}, 'Mods': {Traits.INGENUITY: 2}},
-    TERRESTRIAL = {'Resistances': {Damage_Types.MALAISE: 1.1}, 'Weaknesses': {Damage_Types.COLD: 1.2, Damage_Types.LIGHTNING: 1.2, Damage_Types.FLAME: 1.2}, 'Mods': {Traits.CONSTITUTION: 5}},
-
 
 class Base:
     def __init__(self):
@@ -102,8 +90,10 @@ class Robot(Base):
         self.traits[Traits.INGENUITY.value] = 0
 
 class Item:
-    def __init__(self, value: int):
+    def __init__(self, value: int, t: str, effect: dict):
         self.value = value
+        self.t = t
+        self.effect = effect
 
 
 class Room:
@@ -117,9 +107,14 @@ class Container:
 
 
 class Character:
-    def __init__(self, inv: dict, _class: Classes, race: Races):
+    def __init__(self, inv: dict, race: Base):
         self.inv = dict
-        self.stats = [_class, race]
+        self.stats = [race.traits, race.dam_mults]
+        self.equipment: dict = {'Armor': {'Head': [], 'Chest': [], 'Legs': [], 'Bracers': []}, 'Weapon': []}
+
+    def equip(self, item: Item):
+        if item.t in ['Head', 'Chest', 'Legs', 'Bracers', 'Weapon']:
+            self.equipment[item] = item
 
 
 class Npc(Character):
@@ -131,6 +126,71 @@ class Enemy(Character):
     def __init__(self, inv, _class, race):
         ...
 
+
+def extract(img: str):
+    im = Image.open(img)
+    arr = list(np.array(im))
+    x, y = len(arr), len(arr[0])
+    n_arr = [[0 for i in range(x)] for j in range(y)]
+    for i in range(len(arr)):
+        for j in range(len(arr[i])):
+            match arr[i][j][0]:
+                case 0:
+                    n_arr[i][j] = 1 # █
+                case 128:
+                    n_arr[i][j] = 2 # ▼
+                case 254:
+                    n_arr[i][j] = 0
+                case 96:
+                    n_arr[i][j] = 3 # ▲
+                case 192:
+                    n_arr[i][j] = 4 # &
+    return n_arr
+
+def display(arr):
+    for i in range(len(arr)):
+        for j in range(len(arr[i])):
+            match arr[i][j]:
+                case 0:
+                    arr[i][j] = ' '
+                case 1:
+                    arr[i][j] = '█'
+                case 2:
+                    arr[i][j] = '▼'
+                case 3:
+                    arr[i][j] = '▲'
+                case 4:
+                    arr[i][j] = '&'
+
+
+    return arr
+
+def t_add(t1, t2):
+    return (t1[0] + t2[0], t1[1] + t2[1])
+
+def move(coords: tuple[int, int], arr: list[list[int]], key: str):
+    new_coords = (coords[0], coords[1])
+    match key:
+        case 'KEY_LEFT':
+            new_coords = t_add(coords, (0, -1))
+        case 'KEY_RIGHT':
+            new_coords = t_add(coords, (0, 1))
+        case 'KEY_UP':
+            new_coords = t_add(coords, (-1, 0))
+        case 'KEY_DOWN':
+            new_coords = t_add(coords, (1, 0))
+        case 'ESC':
+            curses.endwin()
+    if -1 < new_coords[0] < len(arr) and -1 < new_coords[1] < len(arr[0]):
+        if arr[new_coords[0]][new_coords[1]] == ' ':
+            arr[new_coords[0]][new_coords[1]] = '&'
+            arr[coords[0]][coords[1]] = ' '
+            return (new_coords, arr)
+        else:
+            return (coords, arr)
+    else:
+        return (coords, arr)
+
 if __name__ == '__main__':
-    h = Human()
-    print(h.dam_mults)
+    c = Character({}, Human())
+    print(c.stats[1])
