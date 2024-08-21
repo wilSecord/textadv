@@ -2,6 +2,7 @@ import curses
 from enum import Enum
 from PIL import Image
 import numpy as np
+import sys
 
 stats = [[]] # HP, Lexicon, Hunger
 
@@ -126,6 +127,65 @@ class Enemy(Character):
     def __init__(self, inv, _class, race):
         ...
 
+def easy_addstr(stdscr, x, y, str):
+    try:
+        stdscr.addstr(x, y, str)
+    except curses.error:
+        pass
+
+
+def boxes(stdscr):
+    maxx, maxy = stdscr.getmaxyx()
+    screen = [[' ' * maxx] * maxy]
+    if maxx % 2 and maxy % 2: # odd on both axes
+        mx = (maxx + 1) // 2
+        my = (maxy + 1) // 2
+        for i in range(maxy):
+            easy_addstr(stdscr, mx, i, '═') # ┼│╬═
+        for i in range(maxx):
+            easy_addstr(stdscr, i, my, '║')
+        
+        easy_addstr(stdscr, mx, my, '╬')
+
+    elif maxx % 2 and not maxy % 2: # odd on x even on y
+        mx = (maxx + 1) // 2
+        my = (maxy - 1) // 2
+        for i in range(maxy):
+            easy_addstr(stdscr, mx, i, '═')
+        for i in range(maxx):
+            easy_addstr(stdscr, i, my, '│')
+            easy_addstr(stdscr, i, my + 1, '│')
+        
+        easy_addstr(stdscr, mx, my, '╡')
+        easy_addstr(stdscr, mx, my + 1, '╞')
+
+    elif not maxx % 2 and not maxy % 2: # even on both axes
+        mx = (maxx - 1) // 2
+        my = (maxy - 1) // 2
+        for i in range(maxy):
+            easy_addstr(stdscr, mx, i, '─')
+            easy_addstr(stdscr, mx + 1, i, '─')
+        for i in range(maxx):
+            easy_addstr(stdscr, i, my, '│')
+            easy_addstr(stdscr, i, my + 1, '│')
+        
+        easy_addstr(stdscr, mx, my, '┘')
+        easy_addstr(stdscr, mx, my + 1, '└')
+        easy_addstr(stdscr, mx + 1, my + 1, '┌')
+        easy_addstr(stdscr, mx + 1, my, '┐')
+    else: # even on x and odd on y
+        mx = (maxx + 1) // 2
+        my = (maxy - 1) // 2
+        for i in range(maxy):
+            easy_addstr(stdscr, mx, i, '─')
+            easy_addstr(stdscr, mx + 1, i, '─')
+        for i in range(maxx):
+            easy_addstr(stdscr, i, my, '║')
+        
+        easy_addstr(stdscr, mx, my, '╨')
+        easy_addstr(stdscr, mx + 1, my, '╥')
+    stdscr.refresh()
+
 
 def extract(img: str):
     im = Image.open(img)
@@ -191,6 +251,3 @@ def move(coords: tuple[int, int], arr: list[list[int]], key: str):
     else:
         return (coords, arr)
 
-if __name__ == '__main__':
-    c = Character({}, Human())
-    print(c.stats[1])
