@@ -20,7 +20,7 @@ def main(stdscr):
 #         for i in range(len(d_arr)):
 #             for j in range(len(d_arr[i])):
 #                 stdscr.addstr(i, j * 2, str(d_arr[i][j]) + ' ')
-        api.assemble(stdscr)
+        api.boxes(stdscr)
         #key = stdscr.getkey()
         #player, arr = api.move(player, arr, key)
         #d_arr = api.display(arr)
