@@ -2,9 +2,13 @@ import api
 import curses
 from curses import wrapper
 import time
+from PIL import Image
+import numpy as np
+
+
 def main(stdscr):
-    arr = api.extract('test_level.bmp')
-    d_arr = api.display(arr)
+    im = Image.open('test_level.bmp')
+    arr = list(np.array(im))
     stdscr.keypad(True)
     curses.noecho()
     curses.cbreak()
@@ -17,13 +21,12 @@ def main(stdscr):
 
     while True:
         stdscr.clear()
-#         for i in range(len(d_arr)):
-#             for j in range(len(d_arr[i])):
-#                 stdscr.addstr(i, j * 2, str(d_arr[i][j]) + ' ')
+        api.c_init()
         api.boxes(stdscr)
-        #key = stdscr.getkey()
-        #player, arr = api.move(player, arr, key)
-        #d_arr = api.display(arr)
+        arr = api.extract(arr)
+        api.blit(stdscr, arr)
+        key = stdscr.getkey()
+        player, arr = api.move(player, arr, key)
         stdscr.refresh()
 
 

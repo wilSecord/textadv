@@ -127,16 +127,22 @@ class Enemy(Character):
     def __init__(self, inv, _class, race):
         ...
 
-def easy_addstr(stdscr, x, y, str):
+def easy_addstr(stdscr, x, y, _str, color=0):
     try:
-        stdscr.addstr(x, y, str)
+        stdscr.addstr(x, y, _str, curses.color_pair(color))
     except curses.error:
         pass
 
 
+def blit(stdscr, arr):
+    color_table = {'█': 240, '▼': 249, '▲': 249, '&': 197, ' ': 0}
+    max_x, max_y = len(arr[0]), len(arr)
+    for y in range(max_y):
+        for x in range(max_x):
+            easy_addstr(stdscr, y, x, arr[y][x], color=color_table[arr[y][x]])
+ 
 def boxes(stdscr):
     maxx, maxy = stdscr.getmaxyx()
-    screen = [[' ' * maxx] * maxy]
     if maxx % 2 and maxy % 2: # odd on both axes
         mx = (maxx + 1) // 2
         my = (maxy + 1) // 2
@@ -186,41 +192,20 @@ def boxes(stdscr):
         easy_addstr(stdscr, mx + 1, my, '╥')
     stdscr.refresh()
 
+def c_init():
+    curses.start_color()
+    curses.use_default_colors()
+    for i in range(curses.COLORS):
+        curses.init_pair(i + 1, i, -1)
 
-def extract(img: str):
-    im = Image.open(img)
-    arr = list(np.array(im))
-    x, y = len(arr), len(arr[0])
+def extract(arr):
+    x, y = len(arr[0]), len(arr)
     n_arr = [[0 for i in range(x)] for j in range(y)]
+    r_t = {0: ' ', 254: '█', 128: '▼', 96: '▲', 192: '&', 100: '∆', 228: 'Ⅲ', 64: '/', 65: '\\', 63: '△'}
     for i in range(len(arr)):
         for j in range(len(arr[i])):
-            match arr[i][j][0]:
-                case 0:
-                    n_arr[i][j] = 1 # █
-                case 128:
-                    n_arr[i][j] = 2 # ▼
-                case 254:
-                    n_arr[i][j] = 0
-                case 96:
-                    n_arr[i][j] = 3 # ▲
-                case 192:
-                    n_arr[i][j] = 4 # &
+            n_arr[i][j] = r_t[arr[i][j][0]]
     return n_arr
-
-def display(arr):
-    for i in range(len(arr)):
-        for j in range(len(arr[i])):
-            match arr[i][j]:
-                case 0:
-                    arr[i][j] = ' '
-                case 1:
-                    arr[i][j] = '█'
-                case 2:
-                    arr[i][j] = '▼'
-                case 3:
-                    arr[i][j] = '▲'
-                case 4:
-                    arr[i][j] = '&'
 
 
     return arr
