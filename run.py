@@ -7,8 +7,9 @@ import numpy as np
 
 
 def main(stdscr):
-    im = Image.open('test_level.bmp')
+    im = Image.open('fultest_level.bmp')
     arr = list(np.array(im))
+    arr = api.extract(arr)
     stdscr.keypad(True)
     curses.noecho()
     curses.cbreak()
@@ -18,15 +19,15 @@ def main(stdscr):
             j = arr[i].index('&')
             player = (i, j)
             break
-
+    
     while True:
-        stdscr.clear()
+        stdscr.erase()
         api.c_init()
         api.boxes(stdscr)
-        arr = api.extract(arr)
         api.blit(stdscr, arr)
         key = stdscr.getkey()
         player, arr = api.move(player, arr, key)
+        time.sleep(1/20)
         stdscr.refresh()
 
 

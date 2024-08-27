@@ -3,6 +3,7 @@ from enum import Enum
 from PIL import Image
 import numpy as np
 import sys
+import random
 
 stats = [[]] # HP, Lexicon, Hunger
 
@@ -135,11 +136,14 @@ def easy_addstr(stdscr, x, y, _str, color=0):
 
 
 def blit(stdscr, arr):
-    color_table = {'█': 240, '▼': 249, '▲': 249, '&': 197, ' ': 0}
+    color_table = {'█': [240], '▼': [249], '▲': [249], '&': [197], '∆': [41, 35, 48, 78], '▓': [179, 180, 137], '╱': [95], '╲': [95],'△': [95]}
     max_x, max_y = len(arr[0]), len(arr)
     for y in range(max_y):
         for x in range(max_x):
-            easy_addstr(stdscr, y, x, arr[y][x], color=color_table[arr[y][x]])
+            if arr[y][x] != ' ':
+                easy_addstr(stdscr, y, x, arr[y][x], color=random.choice(color_table[arr[y][x]]))
+            else:
+                easy_addstr(stdscr, y, x, arr[y][x])
  
 def boxes(stdscr):
     maxx, maxy = stdscr.getmaxyx()
@@ -201,7 +205,7 @@ def c_init():
 def extract(arr):
     x, y = len(arr[0]), len(arr)
     n_arr = [[0 for i in range(x)] for j in range(y)]
-    r_t = {0: ' ', 254: '█', 128: '▼', 96: '▲', 192: '&', 100: '∆', 228: 'Ⅲ', 64: '/', 65: '\\', 63: '△'}
+    r_t = {0: ' ', 254: '█', 128: '▼', 96: '▲', 192: '&', 100: '∆', 228: '▓', 64: '╱', 65: '╲', 63: '△'}
     for i in range(len(arr)):
         for j in range(len(arr[i])):
             n_arr[i][j] = r_t[arr[i][j][0]]
