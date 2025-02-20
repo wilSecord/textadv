@@ -1,4 +1,8 @@
-import curses
+import asciimatics as am
+from asciimatics.screen import Screen
+from asciimatics.scene import Scene
+from asciimatics.effects import Cycle, Print
+from asciimatics.renderers import FigletText, Box
 from enum import Enum
 from PIL import Image
 import numpy as np
@@ -6,6 +10,8 @@ import sys
 import random
 
 stats = [[]] # HP, Lexicon, Hunger
+
+width, height = 211, 53
 
 dialogue = [("Option 1 Layer 1"), ("Option 2 Layer 1", [("Option 1 Layer 2")])]
 
@@ -15,14 +21,13 @@ class Traits(Enum):
     CONSTITUTION = 1
     INGENUITY = 2
     CHARM = 3
-    STREGNTH = 4
+    STRENGTH = 4
 
 
 class Damage_Modifier(Enum):
     RANGED = 0
     MELEE = 1
     MAGIC = 2
-
 class Damage_Types(Enum):
     PIERCING = 0
     BLUNT = 1
@@ -99,8 +104,9 @@ class Item:
 
 
 class Room:
-    def __init__(self, layout: list[list]):
+    def __init__(self, layout: list[list], spawn_coords: tuple):
         self.layout = layout
+        self.spawn_coords = spawn_coords
 
 
 class Container:
@@ -145,62 +151,67 @@ def blit(stdscr, arr):
             else:
                 easy_addstr(stdscr, y, x, arr[y][x])
  
-def boxes(stdscr):
-    maxx, maxy = stdscr.getmaxyx()
-    if maxx % 2 and maxy % 2: # odd on both axes
-        mx = (maxx + 1) // 2
-        my = (maxy + 1) // 2
-        for i in range(maxy):
-            easy_addstr(stdscr, mx, i, '═') # ┼│╬═
-        for i in range(maxx):
-            easy_addstr(stdscr, i, my, '║')
-        
-        easy_addstr(stdscr, mx, my, '╬')
-
-    elif maxx % 2 and not maxy % 2: # odd on x even on y
-        mx = (maxx + 1) // 2
-        my = (maxy - 1) // 2
-        for i in range(maxy):
-            easy_addstr(stdscr, mx, i, '═')
-        for i in range(maxx):
-            easy_addstr(stdscr, i, my, '│')
-            easy_addstr(stdscr, i, my + 1, '│')
-        
-        easy_addstr(stdscr, mx, my, '╡')
-        easy_addstr(stdscr, mx, my + 1, '╞')
-
-    elif not maxx % 2 and not maxy % 2: # even on both axes
-        mx = (maxx - 1) // 2
-        my = (maxy - 1) // 2
-        for i in range(maxy):
-            easy_addstr(stdscr, mx, i, '─')
-            easy_addstr(stdscr, mx + 1, i, '─')
-        for i in range(maxx):
-            easy_addstr(stdscr, i, my, '│')
-            easy_addstr(stdscr, i, my + 1, '│')
-        
-        easy_addstr(stdscr, mx, my, '┘')
-        easy_addstr(stdscr, mx, my + 1, '└')
-        easy_addstr(stdscr, mx + 1, my + 1, '┌')
-        easy_addstr(stdscr, mx + 1, my, '┐')
-    else: # even on x and odd on y
-        mx = (maxx + 1) // 2
-        my = (maxy - 1) // 2
-        for i in range(maxy):
-            easy_addstr(stdscr, mx, i, '─')
-            easy_addstr(stdscr, mx + 1, i, '─')
-        for i in range(maxx):
-            easy_addstr(stdscr, i, my, '║')
-        
-        easy_addstr(stdscr, mx, my, '╨')
-        easy_addstr(stdscr, mx + 1, my, '╥')
-    stdscr.refresh()
+#def boxes(stdscr):
+#    maxx, maxy = stdscr.getmaxyx()
+#    if maxx % 2 and maxy % 2: # odd on both axes
+#        mx = (maxx + 1) // 2
+#        my = (maxy + 1) // 2
+#        for i in range(maxy):
+#            easy_addstr(stdscr, mx, i, '═') # ┼│╬═
+#        for i in range(maxx):
+#            easy_addstr(stdscr, i, my, '║')
+#
+#        easy_addstr(stdscr, mx, my, '╬')
+#
+#    elif maxx % 2 and not maxy % 2: # odd on x even on y
+#        mx = (maxx + 1) // 2
+#        my = (maxy - 1) // 2
+#        for i in range(maxy):
+#            easy_addstr(stdscr, mx, i, '═')
+#        for i in range(maxx):
+#            easy_addstr(stdscr, i, my, '│')
+#            easy_addstr(stdscr, i, my + 1, '│')
+#        
+#        easy_addstr(stdscr, mx, my, '╡')
+#        easy_addstr(stdscr, mx, my + 1, '╞')
+#
+#    elif not maxx % 2 and not maxy % 2: # even on both axes
+#        mx = (maxx - 1) // 2
+#        my = (maxy - 1) // 2
+#        for i in range(maxy):
+#            easy_addstr(stdscr, mx, i, '─')
+#            easy_addstr(stdscr, mx + 1, i, '─')
+#        for i in range(maxx):
+#            easy_addstr(stdscr, i, my, '│')
+#            easy_addstr(stdscr, i, my + 1, '│')
+#        
+#        easy_addstr(stdscr, mx, my, '┘')
+#        easy_addstr(stdscr, mx, my + 1, '└')
+#        easy_addstr(stdscr, mx + 1, my + 1, '┌')
+#        easy_addstr(stdscr, mx + 1, my, '┐')
+#    else: # even on x and odd on y
+#        mx = (maxx + 1) // 2
+#        my = (maxy - 1) // 2
+#        for i in range(maxy):
+#            easy_addstr(stdscr, mx, i, '─')
+#            easy_addstr(stdscr, mx + 1, i, '─')
+#        for i in range(maxx):
+#            easy_addstr(stdscr, i, my, '║')
+#        
+#        easy_addstr(stdscr, mx, my, '╨')
+#        easy_addstr(stdscr, mx + 1, my, '╥')
+#    stdscr.refresh()
 
 def c_init():
     curses.start_color()
     curses.use_default_colors()
     for i in range(curses.COLORS):
         curses.init_pair(i + 1, i, -1)
+
+def load_scene(path: str) -> list[list[str]]:
+    im = Image.open(path)
+    arr = np.array(im)
+    return extract(arr)
 
 def extract(arr):
     x, y = len(arr[0]), len(arr)
@@ -217,19 +228,19 @@ def extract(arr):
 def t_add(t1, t2):
     return (t1[0] + t2[0], t1[1] + t2[1])
 
-def move(coords: tuple[int, int], arr: list[list[int]], key: str):
+def move(coords: tuple[int, int], arr: list[list[int]], key: int):
     new_coords = (coords[0], coords[1])
     match key:
-        case 'KEY_LEFT':
+        case key if key in [Screen.KEY_LEFT, ord("a")]:
             new_coords = t_add(coords, (0, -1))
-        case 'KEY_RIGHT':
+        case key if key in [Screen.KEY_RIGHT, ord("d")]:
             new_coords = t_add(coords, (0, 1))
-        case 'KEY_UP':
+        case key if key in [Screen.KEY_UP, ord("w")]:
             new_coords = t_add(coords, (-1, 0))
-        case 'KEY_DOWN':
+        case key if key in [Screen.KEY_DOWN, ord("s")]:
             new_coords = t_add(coords, (1, 0))
-        case 'ESC':
-            curses.endwin()
+        case 113:
+            sys.exit()
     if -1 < new_coords[0] < len(arr) and -1 < new_coords[1] < len(arr[0]):
         if arr[new_coords[0]][new_coords[1]] == ' ':
             arr[new_coords[0]][new_coords[1]] = '&'
